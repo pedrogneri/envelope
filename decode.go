@@ -43,6 +43,11 @@ func decodeStruct(refType reflect.Type) (map[string]any, error) {
 			if err != nil {
 				return nil, err
 			}
+
+			for k, v := range decoded {
+				fields[k] = v
+			}
+
 			fields[field.Name] = decoded
 			continue
 		}
