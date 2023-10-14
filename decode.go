@@ -1,4 +1,4 @@
-package env
+package envelope
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	envTag = "env"
+	envTag = "envelope"
 )
 
 type property = string
