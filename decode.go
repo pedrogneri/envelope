@@ -65,15 +65,17 @@ func decodeStruct(refType reflect.Type) (map[string]any, string) {
 
 		fieldProps := getFieldProperties(tagValue)
 		value, foundEnv := os.LookupEnv(fieldProps.Key)
-		if !foundEnv && fieldProps.Required {
-			errMsg := fmt.Sprintf(`missing a required field "%s"`, fieldProps.Key)
-			errorAggregate = append(errorAggregate, errMsg)
+		if !foundEnv {
+			if fieldProps.Required {
+				errMsg := fmt.Sprintf(`missing a required field "%s"`, fieldProps.Key)
+				errorAggregate = append(errorAggregate, errMsg)
+			}
 			continue
 		}
 
 		convertedValue, err := convert(typeKind, value)
 		if err != nil {
-			errMsg := fmt.Sprintf(`error converting value from "%s" field into %s"`, fieldProps.Key, typeKind)
+			errMsg := fmt.Sprintf(`error converting value from "%s" field into %s`, fieldProps.Key, typeKind)
 			errorAggregate = append(errorAggregate, errMsg)
 			continue
 		}
