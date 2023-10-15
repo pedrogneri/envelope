@@ -59,19 +59,25 @@ func decodeEnv(refType reflect.Type) (any, string) {
 			continue
 		}
 
-		fieldProps := getFieldProperties(tagValue)
-		value, foundEnv := os.LookupEnv(fieldProps.Key)
+		tagProps := getTagProperties(tagValue)
+		value, foundEnv := os.LookupEnv(tagProps.key)
 		if !foundEnv {
-			if fieldProps.Required {
-				errMsg := fmt.Sprintf(`missing a required field "%s"`, fieldProps.Key)
+			if tagProps.isRequired {
+				errMsg := fmt.Sprintf(`missing a required field "%s"`, tagProps.key)
 				errorAggregate = append(errorAggregate, errMsg)
+				continue
 			}
-			continue
+
+			if tagProps.defaultValue == "" {
+				continue
+			}
+
+			value = tagProps.defaultValue
 		}
 
 		convertedValue, err := convert(typeKind, value)
 		if err != nil {
-			errMsg := fmt.Sprintf(`error converting value from "%s" field into %s`, fieldProps.Key, typeKind)
+			errMsg := fmt.Sprintf(`error converting value from "%s" field into %s`, tagProps.key, typeKind)
 			errorAggregate = append(errorAggregate, errMsg)
 			continue
 		}

@@ -2,14 +2,17 @@ package envelope
 
 import (
 	"os"
+	"reflect"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 type Environment struct {
 	DatabaseAddr string `envelope:"DATABASE_ADDR,required"`
 	DatabasePort int    `envelope:"DATABASE_PORT,required"`
+}
+
+type EnvironmentWithDefaults struct {
+	DatabasePort int `envelope:"DATABASE_PORT,default:3000"`
 }
 
 type EmbeddedStruct struct {
@@ -22,6 +25,24 @@ type NestedStruct struct {
 
 func clear() {
 	os.Clearenv()
+}
+
+func assertEqual(t *testing.T, expected interface{}, actual interface{}) {
+	if !reflect.DeepEqual(expected, actual) {
+		t.Errorf("expected %v, received %v", expected, actual)
+	}
+}
+
+func assertNoError(t *testing.T, err error) {
+	if err != nil {
+		t.Errorf("unexpected error %s", err.Error())
+	}
+}
+
+func assertEqualError(t *testing.T, expectedErrMessage string, err error) {
+	if err.Error() != expectedErrMessage {
+		t.Errorf(`expected "%s", receive "%s"`, expectedErrMessage, err.Error())
+	}
 }
 
 func TestDecode(t *testing.T) {
@@ -39,8 +60,8 @@ func TestDecode(t *testing.T) {
 			DatabasePort: 5432,
 		}
 
-		assert.Equal(t, expectedEnv, env)
-		assert.NoError(t, err)
+		assertEqual(t, expectedEnv, env)
+		assertNoError(t, err)
 	})
 
 	t.Run("should decode embedded struct", func(t *testing.T) {
@@ -59,8 +80,8 @@ func TestDecode(t *testing.T) {
 			},
 		}
 
-		assert.Equal(t, expectedEnv, env)
-		assert.NoError(t, err)
+		assertEqual(t, expectedEnv, env)
+		assertNoError(t, err)
 	})
 
 	t.Run("should decode nested struct", func(t *testing.T) {
@@ -79,8 +100,8 @@ func TestDecode(t *testing.T) {
 			},
 		}
 
-		assert.Equal(t, expectedEnv, env)
-		assert.NoError(t, err)
+		assertEqual(t, expectedEnv, env)
+		assertNoError(t, err)
 	})
 
 	t.Run("should return error if a required env was not found", func(t *testing.T) {
@@ -93,7 +114,7 @@ func TestDecode(t *testing.T) {
 
 		expectedErrorMsg := `missing a required field "DATABASE_PORT"`
 
-		assert.EqualError(t, err, expectedErrorMsg)
+		assertEqualError(t, expectedErrorMsg, err)
 	})
 
 	t.Run("should return error if failed on convert env to struct type", func(t *testing.T) {
@@ -107,7 +128,7 @@ func TestDecode(t *testing.T) {
 
 		expectedErrorMsg := `error converting value from "DATABASE_PORT" field into int`
 
-		assert.EqualError(t, err, expectedErrorMsg)
+		assertEqualError(t, expectedErrorMsg, err)
 	})
 
 	t.Run("should return aggregated errors", func(t *testing.T) {
@@ -120,6 +141,20 @@ func TestDecode(t *testing.T) {
 
 		expectedErrorMsg := `missing a required field "DATABASE_ADDR"; error converting value from "DATABASE_PORT" field into int`
 
-		assert.EqualError(t, err, expectedErrorMsg)
+		assertEqualError(t, expectedErrorMsg, err)
+	})
+
+	t.Run("should use default value if env not set", func(t *testing.T) {
+		defer clear()
+
+		env := new(EnvironmentWithDefaults)
+		err := Decode(env)
+
+		expectedEnv := &EnvironmentWithDefaults{
+			DatabasePort: 3000,
+		}
+
+		assertEqual(t, expectedEnv, env)
+		assertNoError(t, err)
 	})
 }
