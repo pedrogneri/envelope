@@ -48,7 +48,7 @@ func decodeEnv(refType reflect.Type) (any, string) {
 				continue
 			}
 
-			errMsg = setValueToElemField(field, elemField, decodedEnv)
+			errMsg = setFieldValue(field, elemField, decodedEnv)
 			if errMsg != "" {
 				errorAggregate = append(errorAggregate, errMsg)
 				continue
@@ -76,7 +76,7 @@ func decodeEnv(refType reflect.Type) (any, string) {
 			continue
 		}
 
-		errMsg := setValueToElemField(field, elemField, convertedValue)
+		errMsg := setFieldValue(field, elemField, convertedValue)
 		if errMsg != "" {
 			errorAggregate = append(errorAggregate, errMsg)
 		}
@@ -89,7 +89,12 @@ func decodeEnv(refType reflect.Type) (any, string) {
 	return envModelElem.Interface(), ""
 }
 
-func setValueToElemField(refField reflect.StructField, refValue reflect.Value, setValue any) (errMsg string) {
+func setFieldValue(refField reflect.StructField, refValue reflect.Value, setValue any) (errMsg string) {
+	if !refValue.IsValid() {
+		errMsg = fmt.Sprintf(`field "%s" was invalid`, refField.Name)
+		return
+	}
+
 	if !refValue.CanSet() {
 		errMsg = fmt.Sprintf(`field "%s" can't be set`, refField.Name)
 		return
