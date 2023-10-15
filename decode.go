@@ -1,7 +1,6 @@
 package envelope
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -13,50 +12,47 @@ const (
 	structFieldTag = "envelope"
 )
 
-func Decode[T any](environmentModel *T) error {
-	refType := reflect.TypeOf(*environmentModel)
+func Decode[T any](v *T) error {
+	refType := reflect.TypeOf(*v)
 
-	decodedMap, errMsg := decodeStruct(refType)
+	decodedEnv, errMsg := decodeEnv(refType)
 	if errMsg != "" {
 		return errors.New(errMsg)
 	}
 
-	marshal, err := json.Marshal(decodedMap)
-	if err != nil {
-		return err
+	parsedStruct, ok := decodedEnv.(T)
+	if !ok {
+		return errors.New("failed to parse decoded environment to struct")
 	}
 
-	if err := json.Unmarshal(marshal, &environmentModel); err != nil {
-		return err
-	}
+	*v = parsedStruct
+
 	return nil
 }
 
-func decodeStruct(refType reflect.Type) (map[string]any, string) {
-	fields := map[string]any{}
+func decodeEnv(refType reflect.Type) (any, string) {
 	errorAggregate := []string{}
+	envModelElem := reflect.New(refType).Elem()
 
 	for i := 0; i < refType.NumField(); i++ {
 		field := refType.Field(i)
 		tagValue, tagFound := field.Tag.Lookup(structFieldTag)
 
+		elemField := envModelElem.FieldByName(field.Name)
+
 		typeKind := field.Type.Kind()
 		if typeKind == reflect.Struct {
-			decoded, errMsg := decodeStruct(field.Type)
+			decodedEnv, errMsg := decodeEnv(field.Type)
 			if errMsg != "" {
 				errorAggregate = append(errorAggregate, errMsg)
 				continue
 			}
 
-			if field.Anonymous {
-				for k, v := range decoded {
-					fields[k] = v
-				}
-			} else {
-				fields[field.Name] = decoded
+			errMsg = setValueToElemField(field, elemField, decodedEnv)
+			if errMsg != "" {
+				errorAggregate = append(errorAggregate, errMsg)
+				continue
 			}
-
-			continue
 		}
 
 		if !tagFound {
@@ -80,12 +76,25 @@ func decodeStruct(refType reflect.Type) (map[string]any, string) {
 			continue
 		}
 
-		fields[field.Name] = convertedValue
+		errMsg := setValueToElemField(field, elemField, convertedValue)
+		if errMsg != "" {
+			errorAggregate = append(errorAggregate, errMsg)
+		}
 	}
 
 	if len(errorAggregate) > 0 {
 		return nil, strings.Join(errorAggregate, "; ")
 	}
 
-	return fields, ""
+	return envModelElem.Interface(), ""
+}
+
+func setValueToElemField(refField reflect.StructField, refValue reflect.Value, setValue any) (errMsg string) {
+	if !refValue.CanSet() {
+		errMsg = fmt.Sprintf(`field "%s" can't be set`, refField.Name)
+		return
+	}
+
+	refValue.Set(reflect.ValueOf(setValue))
+	return
 }
