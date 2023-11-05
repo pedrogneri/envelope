@@ -13,7 +13,7 @@ type Environment struct {
 func main() {
     myEnv := new(Environment)
 
-    if err := env.Decode(myEnv); err != nil {
+    if err := envelope.Decode(myEnv); err != nil {
         panic(err)
     }
 }
