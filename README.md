@@ -1,4 +1,5 @@
 # Envelope
+[![GoDoc](https://godoc.org/github.com/pedrogneri/envelope?status.svg)](https://godoc.org/github.com/pedrogneri/envelope)
 
 Envelope is a lightweight Go package designed to decode environment variables into structs without relying on any external dependencies.
 
