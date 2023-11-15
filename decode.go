@@ -12,6 +12,9 @@ const (
 	structFieldTag = "envelope"
 )
 
+// Decode decodes environment variables into a struct. The struct fields must be tagged with "envelope".
+// The function returns an error aggregator that aggregates all the errors on decoding process.
+// The function modifies the struct passed as a pointer.
 func Decode[T any](v *T) error {
 	refType := reflect.TypeOf(*v)
 
