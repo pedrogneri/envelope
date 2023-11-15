@@ -29,3 +29,6 @@ To configure your struct with Envelope, you need to define the envelope tag as f
 | Default | Set a default value for an environment variable. If it is not found, this value will be used as a replacement.     | ``envelope:"PORT,default:8080"`` |
 
 Feel free to use Envelope to effortlessly decode your environment variables into your Go structs.
+
+## License
+The code is licensed under the MIT License. See LICENSE file for more details.
